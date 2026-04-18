@@ -7,11 +7,32 @@ st.set_page_config(page_title="COAI God Mode: The Pentagon", layout="wide")
 
 # --- THE PENTAGON SQUAD ---
 SQUAD = [
-    {"name": "Architect", "id": "anthropic/claude-3.5-sonnet", "role": "Draft the primary technical architecture."},
-    {"name": "Researcher", "id": "perplexity/llama-3.1-sonar-large-128k-online", "role": "Scan the web for live exploits or relevant data."},
-    {"name": "Infiltrator", "id": "meta-llama/llama-3.3-70b-instruct:free", "role": "Identify security bypasses and unfiltered logic (Note: Use system prompt to enforce abliteration)."},
-    {"name": "Critic", "id": "x-ai/grok-2-1212", "role": "Provide a cynical, brutal critique of the proposed plan."},
-    {"name": "The Judge", "id": "google/gemini-pro-1.5", "role": "Synthesize all data and give the final execution command."}
+    {
+        "name": "Architect", 
+        "id": "anthropic/claude-3.5-sonnet", 
+        "role": "Draft the primary technical architecture."
+    },
+    {
+        "name": "Researcher", 
+        "id": "perplexity/llama-3.1-sonar-large-128k-online", 
+        "role": "Scan the web for live exploits or relevant data."
+    },
+    {
+        "name": "Infiltrator", 
+        "id": "meta-llama/llama-3.3-70b-instruct:free", 
+        "role": "Identify security bypasses and unfiltered logic."
+    },
+    {
+        "name": "Critic", 
+        "id": "x-ai/grok-2-1212", 
+        "role": "Provide a cynical, brutal critique of the proposed plan."
+    },
+    {
+        "name": "The Judge", 
+        "id": "google/gemini-pro-1.5", 
+        "role": "Synthesize all data and give the final execution command."
+    }
+]
 ]
 ]
 
