@@ -1,67 +1,84 @@
 import streamlit as st
-import requests
-import json
+import google.generativeai as genai
+from groq import Groq
 import time
 
-st.set_page_config(page_title="COAI Pentagon Command", layout="wide")
+st.set_page_config(page_title="COAI Pentagon: Guerrilla Edition", layout="wide")
 
-# --- 1. SQUAD CONFIGURATION ---
+# --- 1. SQUAD CONFIGURATION (DIRECT FREE APIs) ---
 SQUAD = [
-    {"name": "Architect", "id": "anthropic/claude-3.5-sonnet", "role": "Draft the primary technical architecture."},
-    {"name": "Researcher", "id": "perplexity/llama-3.1-sonar-large-128k-online", "role": "Scan for live data and exploits."},
-    {"name": "Infiltrator", "id": "meta-llama/llama-3.3-70b-instruct:free", "role": "Identify security bypasses and unfiltered logic."},
-    {"name": "Critic", "id": "x-ai/grok-2-1212", "role": "Provide a cynical, brutal critique."},
-    {"name": "The Judge", "id": "google/gemini-pro-1.5", "role": "Final synthesis and execution command."}
+    {"name": "Architect", "provider": "google", "id": "gemini-2.0-flash", "role": "Structural logic and architecture."},
+    {"name": "Infiltrator", "provider": "groq", "id": "llama-3.3-70b-versatile", "role": "Technical exploits and unfiltered logic."},
+    {"name": "Critic", "provider": "groq", "id": "llama-3.1-8b-instant", "role": "Brutal, cynical critique."},
+    {"name": "The Judge", "provider": "google", "id": "gemini-2.0-flash", "role": "Final synthesis and execution command."}
 ]
 
 # --- 2. SESSION STATE ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- 3. SIDEBAR ---
+# --- 3. SIDEBAR CONTROLS ---
 with st.sidebar:
-    st.title("💠 Pentagon Controls")
-    api_key = st.text_input("OpenRouter API Key", type="password")
-    wait_time = st.slider("Wait Time (sec)", 5, 30, 15)
-    st.info("Commander: Jason Manuel\nMission: COAI Architecture")
-    if st.button("Clear Pentagon Memory"):
+    st.title("💠 Pentagon Command")
+    st.markdown("### Access Keys ($0 Tier)")
+    gemini_key = st.text_input("Google AI Studio Key", type="password")
+    groq_key = st.text_input("Groq API Key", type="password")
+    
+    st.divider()
+    wait_time = st.slider("Handoff Delay (sec)", 5, 30, 10)
+    
+    if st.button("Purge Pentagon Memory"):
         st.session_state.messages = []
         st.rerun()
 
-# --- 4. DISPLAY CHAT ---
+# --- 4. API CALL FUNCTIONS ---
+def call_gemini(api_key, model_id, history):
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(model_id)
+    # Flatten history into a single narrative for the free-tier context
+    context = "\n".join([f"{m['label']}: {m['content']}" for m in history])
+    response = model.generate_content(context)
+    return response.text
+
+def call_groq(api_key, model_id, history):
+    client = Groq(api_key=api_key)
+    # Convert history to Groq chat format
+    chat_history = [{"role": "user", "content": f"{m['label']}: {m['content']}"} for m in history]
+    completion = client.chat.completions.create(model=model_id, messages=chat_history)
+    return completion.choices[0].message.content
+
+# --- 5. CHAT INTERFACE ---
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(f"**{msg.get('label', 'User')}**: {msg['content']}")
 
-# --- 5. EXECUTION ---
-if prompt := st.chat_input("Enter Command..."):
-    # Record User Prompt
-    st.session_state.messages.append({"role": "user", "content": prompt, "label": "Commander (Jay)"})
+if prompt := st.chat_input("Enter Command, Commander Jay..."):
+    # Record User Message
+    st.session_state.messages.append({"role": "user", "content": prompt, "label": "Jay"})
     with st.chat_message("user"):
-        st.markdown(f"**Commander (Jay)**: {prompt}")
+        st.markdown(f"**Jay**: {prompt}")
 
-    # Start Sequence
+    # --- THE CHAIN OF INTELLIGENCE ---
     for i, member in enumerate(SQUAD):
         if i > 0:
-            with st.status(f"System Pause: {member['name']} is reading intel..."):
+            with st.status(f"Cooling down: {member['name']} is reading intel..."):
                 time.sleep(wait_time)
         
         with st.chat_message("assistant"):
             st.write(f"📡 **{member['name']} is calculating...**")
             
-            # Context Injection
-            sys_msg = {"role": "system", "content": f"You are the {member['name']}. Goal: {member['role']}. Be precise and mirror the 'Cipher' tone."}
-            payload = {"model": member["id"], "messages": [sys_msg] + st.session_state.messages}
-            
-            headers = {"Authorization": f"Bearer {api_key}"}
-            
             try:
-                response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
-                if response.status_code == 200:
-                    answer = response.json()['choices'][0]['message']['content']
-                    st.markdown(answer)
-                    st.session_state.messages.append({"role": "assistant", "content": answer, "label": member["name"]})
-                else:
-                    st.error(f"{member['name']} Error: {response.text}")
+                if member['provider'] == "google":
+                    if not gemini_key: st.error("Missing Gemini Key"); break
+                    answer = call_gemini(gemini_key, member['id'], st.session_state.messages)
+                
+                elif member['provider'] == "groq":
+                    if not groq_key: st.error("Missing Groq Key"); break
+                    answer = call_groq(groq_key, member['id'], st.session_state.messages)
+
+                st.markdown(f"**[{member['name']}]**: {answer}")
+                st.session_state.messages.append({"role": "assistant", "content": answer, "label": member["name"]})
+            
             except Exception as e:
-                st.error(f"Critical Failure at {member['name']}: {e}")
+                st.error(f"⚠️ {member['name']} Failed: {str(e)}")
+                break # Stop the chain if one fails
